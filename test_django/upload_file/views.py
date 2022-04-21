@@ -1,5 +1,6 @@
 from os import path, mkdir
 
+import pandas as pandas
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -9,7 +10,6 @@ from .serializers import UploadFileSerializer
 
 class UploadFileView(APIView):
     def post(self, request: Request):
-        print(request)
 
         serializer = UploadFileSerializer(data=request.data)
 
@@ -28,7 +28,15 @@ class UploadFileView(APIView):
             new_excel_file = open(excel_path, mode="wb")
             new_excel_file.write(excel_body)
             new_excel_file.close()
-            a = 3
 
-            response = [1, 2, 3, 4, 5]
+            excel_data_df = pandas.read_excel(excel_path)
+
+            data_dict: dict = excel_data_df.to_dict()
+
+            response = []
+
+            for value in data_dict.values():
+                for metric in value.values():
+                    response.append(metric)
+
         return Response(data=response)
