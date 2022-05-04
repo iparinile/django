@@ -2,6 +2,7 @@ from os import path, mkdir
 
 import pandas as pandas
 from django.core.files.uploadedfile import InMemoryUploadedFile
+from django.http import FileResponse
 from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -39,4 +40,5 @@ class UploadFileView(APIView):
                 for metric in value.values():
                     response.append(metric)
 
-        return Response(data=response)
+            # return Response(data=excel_body.decode('unicode_escape'), content_type="application/vnd.ms-excel")
+            return FileResponse(excel_body)
