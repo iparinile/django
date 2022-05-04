@@ -30,15 +30,5 @@ class UploadFileView(APIView):
             new_excel_file.write(excel_body)
             new_excel_file.close()
 
-            excel_data_df = pandas.read_excel(excel_path)
-
-            data_dict: dict = excel_data_df.to_dict()
-
-            response = []
-
-            for value in data_dict.values():
-                for metric in value.values():
-                    response.append(metric)
-
             # return Response(data=excel_body.decode('unicode_escape'), content_type="application/vnd.ms-excel")
             return FileResponse(excel_body)
