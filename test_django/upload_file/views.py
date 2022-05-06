@@ -8,6 +8,7 @@ import pandas as pd
 from django.contrib.auth.models import User
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.http import FileResponse
+from django.core.exceptions import ObjectDoesNotExist
 from keras_preprocessing.text import tokenizer_from_json
 from rest_framework.request import Request
 from rest_framework.response import Response
@@ -26,10 +27,10 @@ class AuthUserView(APIView):
             request_body = request.data
             try:
                 user: User = User.objects.get(username=request_body["login"])
-            except DoesNotExist:
-                return Response(status=404)
+            except ObjectDoesNotExist:
+                return Response(data="User not found", status=404)
 
-            user_obj = user.save()
+            user.save()
             if user.check_password(request_body["password"]):
                 payload = {
                     'user_id': user.id
@@ -44,7 +45,7 @@ class AuthUserView(APIView):
 
                 return Response(data=response_body, status=200)
             else:
-                return Response(status=401)
+                return Response(data="Unauthorized", status=401)
 
 
 class UploadFileView(APIView):
@@ -54,7 +55,7 @@ class UploadFileView(APIView):
         try:
             read_token(token)
         except ReadTokenException:
-            return Response(status=401)
+            return Response(data="Unauthorized", status=401)
 
         excel_path = "src/excel/output.xlsx"
 
@@ -67,7 +68,7 @@ class UploadFileView(APIView):
         try:
             read_token(token)
         except ReadTokenException:
-            return Response(status=401)
+            return Response(data="Unauthorized", status=401)
 
         serializer = UploadFileSerializer(data=request.data)
 
