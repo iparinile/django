@@ -5,18 +5,69 @@ from os import path, mkdir
 import keras
 import numpy as np
 import pandas as pd
+from django.contrib.auth.models import User
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.http import FileResponse
 from keras_preprocessing.text import tokenizer_from_json
 from rest_framework.request import Request
+from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from .helpers import get_lower, text_update_key, onlygoodsymbols
-from .serializers import UploadFileSerializer
+from .serializers import UploadFileSerializer, AuthUserSerializer
+from .token import create_token, read_token, ReadTokenException
+
+
+class AuthUserView(APIView):
+    def post(self, request: Request):
+        serializer = AuthUserSerializer(data=request.data)
+
+        if serializer.is_valid(raise_exception=True):
+            request_body = request.data
+            try:
+                user: User = User.objects.get(username=request_body["login"])
+            except DoesNotExist:
+                return Response(status=404)
+
+            user_obj = user.save()
+            if user.check_password(request_body["password"]):
+                payload = {
+                    'user_id': user.id
+                }
+
+                token = create_token(payload)
+
+                response_body = {
+                    'user_id': user.id,
+                    'Authorization': token
+                }
+
+                return Response(data=response_body, status=200)
+            else:
+                return Response(status=401)
 
 
 class UploadFileView(APIView):
+    def get(self, request: Request):
+
+        token = request.headers.get('Authorization')
+        try:
+            read_token(token)
+        except ReadTokenException:
+            return Response(status=401)
+
+        excel_path = "src/excel/output.xlsx"
+
+        response_excel_file = open(excel_path, mode="rb")
+        return FileResponse(response_excel_file)
+
     def post(self, request: Request):
+
+        token = request.headers.get('Authorization')
+        try:
+            read_token(token)
+        except ReadTokenException:
+            return Response(status=401)
 
         serializer = UploadFileSerializer(data=request.data)
 
@@ -70,6 +121,4 @@ class UploadFileView(APIView):
             excel_file.to_excel(writer)
             # save excel
             writer.save()
-
-            # return Response(data=excel_body.decode('unicode_escape'), content_type="application/vnd.ms-excel")
-            return FileResponse(excel_body)
+            return Response(status=201)
