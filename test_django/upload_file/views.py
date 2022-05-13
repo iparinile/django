@@ -51,12 +51,6 @@ class AuthUserView(APIView):
 class UploadFileView(APIView):
     def get(self, request: Request):
 
-        token = request.headers.get('Authorization')
-        try:
-            read_token(token)
-        except ReadTokenException:
-            return Response(data="Unauthorized", status=401)
-
         excel_path = "src/excel/output.xlsx"
 
         response_excel_file = open(excel_path, mode="rb")
